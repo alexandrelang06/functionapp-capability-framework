@@ -1,8 +1,15 @@
+name: Azure Static Web Apps CI/CD
+
+# ← cette partie doit être parfaitement au début, sans espaces devant
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   build_and_deploy_job:
     runs-on: ubuntu-latest
 
-    # --- ici on injecte les vars dans le runner ---
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
