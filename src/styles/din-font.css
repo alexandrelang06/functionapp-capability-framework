@@ -1,0 +1,14 @@
+/* DIN font face declarations */
+@font-face {
+  font-family: 'DIN';
+  src: url('https://db.onlinewebfonts.com/t/d2d21b54d9d1e45af6c94d8dbb62c36f.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'DIN';
+  src: url('https://db.onlinewebfonts.com/t/d2d21b54d9d1e45af6c94d8dbb62c36f.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+}
