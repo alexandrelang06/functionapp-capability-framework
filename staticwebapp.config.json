@@ -1,0 +1,16 @@
+{
+  "routes": [
+    {
+      "route": "/rest/{*chemin}",
+      "rewrite": "https://4.231.232.226:8443/rest/{chemin}"
+    },
+    {
+      "route": "/auth/{*chemin}",
+      "rewrite": "https://4.231.232.226:8443/auth/{chemin}"
+    },
+    {
+      "route": "/*",
+      "serve": "/index.html"
+    }
+  ]
+}
