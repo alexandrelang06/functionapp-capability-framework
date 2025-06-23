@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json.schemastore.org/proxies",
+  "proxies": {
+    "authProxy": {
+      "matchCondition": {
+        "route": "/api/auth/{*rest}"
+      },
+      "backendUri": "https://4.231.232.226:8443/auth/{rest}",
+      "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+    },
+    "restProxy": {
+      "matchCondition": {
+        "route": "/api/rest/{*rest}"
+      },
+      "backendUri": "https://4.231.232.226:8443/rest/{rest}",
+      "methods": ["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+    }
+  }
+}
