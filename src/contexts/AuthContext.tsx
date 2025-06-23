@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase, signIn as supabaseSignIn, signOut as supabaseSignOut } from '../lib/supabase';
+import { supabase, signIn as supabaseSignIn, signOut as supabaseSignOut, initializeAuthUsers } from '../lib/supabase';
 
 interface AuthContextType {
   session: Session | null;
@@ -19,24 +19,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const isLoginPage = location.pathname === '/login';
+  
+  // Automatically sign in as user
+  const autoSignIn = async () => {
+    try {
+      // Initialize auth users if they don't exist
+      await initializeAuthUsers();
+      
+      // Try to sign in as user
+      const { data, error } = await supabaseSignIn('user@example.com', 'user123');
+      if (error) {
+        console.error('Auto sign in error:', error);
+      }
+    } catch (err) {
+      console.error('Auto sign in error:', err);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-
-      // If no session and not on login page, redirect to login
-      if (!session && !isLoginPage) {
-        navigate('/login');
-      }
-      // If has session and on login page, redirect to home
-      else if (session && isLoginPage) {
-        navigate('/');
-      }
       
-      setLoading(false);
+      if (!session) {
+        // Auto sign in if no session
+        autoSignIn().then(() => {
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
     });
 
     // Listen for auth changes
@@ -45,19 +58,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-
-      // Redirect to login if not authenticated
-      if (!session && !isLoginPage) {
-        navigate('/login');
-      } 
-      // Redirect to home if authenticated and on login page
-      else if (session && isLoginPage) {
-        navigate('/');
-      }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, isLoginPage]);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -75,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabaseSignOut();
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;

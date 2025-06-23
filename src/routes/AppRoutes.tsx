@@ -13,13 +13,23 @@ import { AdminPanel } from '../pages/AdminPanel';
 import { ProcessDetails } from '../pages/ProcessDetails';
 import { ProcessEditor } from '../pages/ProcessEditor';
 import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export function AppRoutes() {
   const { isSuperAdmin } = useUser();
+  const { loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue"></div>
+        <span className="ml-3 text-gray-600">Chargement...</span>
+      </div>
+    );
+  }
 
   return (
     <Routes>
-      <Route path="login" element={<Login />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="new-assessment" element={<NewAssessment />} />

@@ -21,8 +21,7 @@ export function Navigation() {
   const handleLogout = async () => {
     try {
       await signOut();
-      setRole('user');
-      navigate('/login');
+      window.location.reload(); // Reload the page to trigger auto sign-in
     } catch (error) {
       console.error('Logout error:', error);
     }
