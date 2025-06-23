@@ -1,5 +1,4 @@
 ﻿module.exports = async function (context, req) {
-  // ignorer le TLS auto-signé
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
   const path = context.bindingData.path || ''
@@ -8,18 +7,12 @@
     : ''
   const url = `https://4.231.232.226:8443/rest/${path}${query}`
 
-  // forwarder correctement le body et le content-length
-  const body = ['GET', 'HEAD', 'OPTIONS'].includes(req.method)
-    ? undefined
-    : JSON.stringify(req.body)
-
   const resp = await fetch(url, {
     method: req.method,
     headers: {
       ...req.headers,
-      'content-length': req.headers['content-length'] || Buffer.byteLength(body || '')
-    },
-    body
+      'content-type': 'application/json'
+    }
   })
 
   const buffer = await resp.arrayBuffer()

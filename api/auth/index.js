@@ -7,14 +7,17 @@
     : ''
   const url = `https://4.231.232.226:8443/auth/${path}${query}`
 
+  // Préparer le body
   const body = ['GET', 'HEAD', 'OPTIONS'].includes(req.method)
     ? undefined
     : JSON.stringify(req.body)
 
+  // Forward avec Content-Type et Content-Length
   const resp = await fetch(url, {
     method: req.method,
     headers: {
       ...req.headers,
+      'content-type': 'application/json',
       'content-length': req.headers['content-length'] || Buffer.byteLength(body || '')
     },
     body
