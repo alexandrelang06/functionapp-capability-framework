@@ -32,6 +32,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_IT_FRAMEWORK }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: "/"                # racine de votre React
-          output_location: "dist"          # dossier de build Vite
-          api_location: "api"              # IMPORTANT : là où sont vos fonctions auth+rest
+          app_location:             "/"       # chemin relatif à la racine
+          api_location:             "api"     # dossier où se trouve proxies.json
+          output_location:          "dist"    # dossier de build Vite
+          skip_api_build:           true      # <-- AJOUTER CETTE LIGNE
