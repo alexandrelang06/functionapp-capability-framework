@@ -1,22 +1,20 @@
-﻿// désactive la vérif. du cert autosigné
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
+﻿process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 import fetch from 'node-fetch'
 
 export default async function (context, req) {
-  const rest = context.bindingData.rest ?? ''
+  const rest = context.bindingData.rest || ''
   const target = `https://4.231.232.226:8443/auth/${rest}`
-  // on remonte toutes les méthodes, headers et le body
   const resp = await fetch(target, {
     method: req.method,
     headers: {
       ...req.headers,
       host: '4.231.232.226:8443'
     },
-    body: ['GET','HEAD','OPTIONS'].includes(req.method) ? undefined : req.rawBody
+    body: ['GET','HEAD','OPTIONS'].includes(req.method)
+      ? undefined
+      : req.rawBody
   })
   const buffer = await resp.buffer()
-  // renvoi brute des headers, status et body
   context.res = {
     status: resp.status,
     headers: Object.fromEntries(resp.headers.entries()),

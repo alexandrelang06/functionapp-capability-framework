@@ -33,6 +33,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location:             "/"       # chemin relatif à la racine
-          api_location:             ""     # dossier où se trouve proxies.json
+          api_location:             "api"     # dossier où se trouve proxies.json
           output_location:          "dist"    # dossier de build Vite
           skip_api_build:           true      # <-- AJOUTER CETTE LIGNE
