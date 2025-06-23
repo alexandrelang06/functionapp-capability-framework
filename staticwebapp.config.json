@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "route": "/api/{*rest}",
+      "rewrite": "https://it-framework.bearingpoint.com/{rest}"
+    },
+    {
+      "route": "/{*all}",
+      "serve": "/index.html"
+    }
+  ]
+}
