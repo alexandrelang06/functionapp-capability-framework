@@ -1,24 +1,21 @@
-﻿module.exports = async function (context, req) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+﻿import fetch from "node-fetch"
 
-  const path = context.bindingData.path || ''
-  const query = req.originalUrl.includes('?')
-    ? '?' + req.originalUrl.split('?')[1]
-    : ''
-  const url = `https://4.231.232.226:8443/rest/${path}${query}`
+export default async function (context, req) {
+  const rest = context.bindingData.rest || ""
+  const qs    = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : ""
+  const targetUrl = `https://4.231.232.226:8443/rest/${rest}${qs}`
+  const headers = { ...req.headers }
+  delete headers.host
 
-  const resp = await fetch(url, {
+  const resp = await fetch(targetUrl, {
     method: req.method,
-    headers: {
-      ...req.headers,
-      'content-type': 'application/json'
-    }
+    headers,
+    body: ["GET","OPTIONS"].includes(req.method) ? undefined : req.rawBody
   })
 
-  const buffer = await resp.arrayBuffer()
   context.res = {
     status: resp.status,
     headers: Object.fromEntries(resp.headers.entries()),
-    body: Buffer.from(buffer)
+    body: await resp.buffer()
   }
 }
