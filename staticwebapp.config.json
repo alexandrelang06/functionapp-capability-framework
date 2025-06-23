@@ -3,10 +3,10 @@
     {
       "route": "/api/{*rest}",
       "rewrite": "https://it-framework.bearingpoint.com/{rest}"
-    },
-    {
-      "route": "/{*all}",
-      "serve": "/index.html"
     }
-  ]
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/api/*"]
+  }
 }
