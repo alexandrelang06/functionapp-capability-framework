@@ -1,11 +1,11 @@
 {
   "routes":[
     {
-      "route":"/api/auth/{*rest}",
+      "route": "/api/auth/{*rest*}",
       "rewrite":"https://it-framework-function-app.azurewebsites.net/api/auth/{rest}"
     },
     {
-      "route":"/api/rest/{*rest}",
+      "route": "/api/rest/{*rest*}",
       "rewrite":"https://it-framework-function-app.azurewebsites.net/api/rest/{rest}"
     }
   ],
