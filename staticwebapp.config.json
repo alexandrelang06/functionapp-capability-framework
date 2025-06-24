@@ -1,16 +1,16 @@
 {
-  "routes":[
+  "routes": [
     {
-      "route": "/api/auth/{*rest*}",
-      "rewrite":"https://it-framework-function-app.azurewebsites.net/api/auth/{rest}"
+      "route": "/api/auth/*",
+      "rewrite": "https://it-framework-function-app.azurewebsites.net/api/auth/*"
     },
     {
-      "route": "/api/rest/{*rest*}",
-      "rewrite":"https://it-framework-function-app.azurewebsites.net/api/rest/{rest}"
+      "route": "/api/rest/*",
+      "rewrite": "https://it-framework-function-app.azurewebsites.net/api/rest/*"
     }
   ],
-  "navigationFallback":{
-    "rewrite":"/index.html",
-    "exclude":["/api/*"]
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [ "/api/*" ]
   }
 }
