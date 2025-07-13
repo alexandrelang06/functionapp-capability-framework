@@ -22,7 +22,7 @@ try {
 }
 
 // Configure client options with improved error handling
-cconst clientOptions = {
+const clientOptions = {
   auth: {
     persistSession: false, // ❗ important : évite le header Authorization
     autoRefreshToken: false,
