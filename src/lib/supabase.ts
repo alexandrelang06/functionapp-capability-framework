@@ -141,6 +141,7 @@ const clientOptions = {
 
 // Initialize the Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, clientOptions);
+await supabase.auth.setSession(null)   // <-- ajoute juste cette ligne
 
 // Helper function to check database connection with comprehensive error handling
 export const checkDatabaseConnection = async (): Promise<boolean> => {
