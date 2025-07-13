@@ -22,17 +22,20 @@ try {
 }
 
 // Configure client options with improved error handling
-const clientOptions = {
+cconst clientOptions = {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+    persistSession: false, // ❗ important : évite le header Authorization
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   },
   db: {
     schema: 'public'
   },
   global: {
-    headers: { 'x-application-name': 'it-process-framework' },
+    headers: {
+      'x-application-name': 'it-process-framework',
+      'apikey': supabaseAnonKey // injecte explicitement l'apikey
+    },
     fetch: async (url: string, options: RequestInit) => {
       const maxRetries = 3;
       let attempt = 0;
