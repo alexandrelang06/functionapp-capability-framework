@@ -27,6 +27,11 @@ const clientOptions = {
     persistSession: false, // ❗ important : évite le header Authorization
     autoRefreshToken: false,
     detectSessionInUrl: false
+	storage: {
+		getItem: () => null,
+		setItem: () => {},
+		removeItem: () => {}
+	}
   },
   db: {
     schema: 'public'
