@@ -48,12 +48,12 @@ const clientOptions = {
 
       while (attempt < maxRetries) {
         try {
-          console.log(`Attempting request to: ${url} (attempt ${attempt + 1}/${maxRetries})`);
-          console.log('headers sent:', supabase._headers)
+   //       console.log(`Attempting request to: ${url} (attempt ${attempt + 1}/${maxRetries})`);
+   //       console.log('headers sent:', supabase._headers)
           // Add timeout to prevent hanging requests
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
-            console.log('Request timeout after 15 seconds');
+ //           console.log('Request timeout after 15 seconds');
             controller.abort();
           }, 15000); // 15 second timeout
           
@@ -63,7 +63,7 @@ const clientOptions = {
           });
           
           clearTimeout(timeoutId);
-          console.log(`Request successful: ${response.status} ${response.statusText}`);
+ //         console.log(`Request successful: ${response.status} ${response.statusText}`);
           
           if (!response.ok) {
             // Handle specific HTTP status codes with detailed messages
@@ -99,11 +99,11 @@ const clientOptions = {
             
             // Handle specific network errors
             if (err.name === 'AbortError') {
-              console.log('Request was aborted due to timeout');
+ //             console.log('Request was aborted due to timeout');
             } else if (err.message.includes('Failed to fetch')) {
-              console.log('Network fetch failed - possible connectivity issue');
+ //             console.log('Network fetch failed - possible connectivity issue');
             } else if (err.message.includes('NetworkError')) {
-              console.log('Network error occurred');
+ //             console.log('Network error occurred');
             }
           }
           
@@ -118,7 +118,7 @@ const clientOptions = {
           const jitter = Math.random() * 1000;
           const delay = Math.min(baseDelay + jitter, 10000);
           
-          console.log(`Retrying in ${Math.round(delay)}ms...`);
+//          console.log(`Retrying in ${Math.round(delay)}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -145,9 +145,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, cli
 // Helper function to check database connection with comprehensive error handling
 export const checkDatabaseConnection = async (): Promise<boolean> => {
   try {
-    console.log('Checking database connection...');
-    console.log('Supabase URL:', supabaseUrl);
-    console.log('Using anon key:', supabaseAnonKey ? 'Yes' : 'No');
+ //   console.log('Checking database connection...');
+ //   console.log('Supabase URL:', supabaseUrl);
+ //   console.log('Using anon key:', supabaseAnonKey ? 'Yes' : 'No');
     
     const { data, error } = await supabase
       .from('processes')
@@ -159,7 +159,7 @@ export const checkDatabaseConnection = async (): Promise<boolean> => {
       throw new Error(`Database error: ${error.message}`);
     }
     
-    console.log('Database connection successful, found', data?.length || 0, 'processes');
+//    console.log('Database connection successful, found', data?.length || 0, 'processes');
     return true;
   } catch (err) {
     console.error('Database connection error:', err);
@@ -240,16 +240,16 @@ export const checkServiceStatus = async (): Promise<{ available: boolean; messag
 
 // Helper function to test database with detailed diagnostics
 export const testDatabaseStatus = async () => {
-  console.log('🔍 Running comprehensive database diagnostics...');
+//  console.log('🔍 Running comprehensive database diagnostics...');
   
   try {
     // Test 1: Basic connection
-    console.log('Test 1: Basic connection...');
+//    console.log('Test 1: Basic connection...');
     const connectionTest = await checkServiceStatus();
-    console.log('Connection test result:', connectionTest);
+//    console.log('Connection test result:', connectionTest);
     
     // Test 2: Count records in each table
-    console.log('Test 2: Counting records...');
+//    console.log('Test 2: Counting records...');
     const counts = await Promise.allSettled([
       supabase.from('domains').select('*', { count: 'exact', head: true }),
       supabase.from('categories').select('*', { count: 'exact', head: true }),
@@ -259,7 +259,7 @@ export const testDatabaseStatus = async () => {
     counts.forEach((result, index) => {
       const tableName = ['domains', 'categories', 'processes'][index];
       if (result.status === 'fulfilled') {
-        console.log(`${tableName}: ${result.value.count} records`);
+ //       console.log(`${tableName}: ${result.value.count} records`);
       } else {
         console.error(`${tableName}: Error -`, result.reason);
       }
