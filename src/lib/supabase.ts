@@ -38,7 +38,7 @@ const clientOptions = {
   },
   global: {
     headers: {
-	  'apikey': supabaseAnonKey // injecte explicitement l'apikey
+	  'apikey': supabaseAnonKey, // injecte explicitement l'apikey
       'x-application-name': 'it-process-framework',
     },
     fetch: async (url: string, options: RequestInit) => {
