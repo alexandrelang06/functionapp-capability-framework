@@ -24,22 +24,22 @@ try {
 // Configure client options with improved error handling
 const clientOptions = {
   auth: {
-    persistSession: false, // ❗ important : évite le header Authorization
+    persistSession: true, // ❗ important : évite le header Authorization
     autoRefreshToken: false,
     detectSessionInUrl: false,
-	storage: {
+/*	storage: {
 		getItem: () => null,
 		setItem: () => {},
 		removeItem: () => {}
-	}
+	}*/
   },
   db: {
     schema: 'public'
   },
   global: {
     headers: {
+	  'apikey': supabaseAnonKey // injecte explicitement l'apikey
       'x-application-name': 'it-process-framework',
-      'apikey': supabaseAnonKey // injecte explicitement l'apikey
     },
     fetch: async (url: string, options: RequestInit) => {
       const maxRetries = 3;
