@@ -19,7 +19,9 @@ export function calculateProcessScore(scores: Score[], processId: string): numbe
 export function calculateCategoryScore(scores: Score[], category: Category, categoryScores?: CategoryScore[]): number {
   // Check if we have a manual score for this category
   const manualScoreEntry = categoryScores?.find(cs => cs.category_id === category.id);
-  if (manualScoreEntry && manualScoreEntry.is_manual && manualScoreEntry.manual_score !== null) {
+  
+  // If we have a category score entry (manual or automatic), use it
+  if (manualScoreEntry && manualScoreEntry.manual_score !== null) {
     return manualScoreEntry.manual_score;
   }
 
@@ -29,8 +31,11 @@ export function calculateCategoryScore(scores: Score[], category: Category, cate
     .filter(score => score > 0); // Exclude N/A scores (0)
 
   if (processScores.length === 0) return 0;
-  const avg = processScores.reduce((a, b) => a + b, 0) / processScores.length;
-  return Math.ceil(avg * 10) / 10;
+  
+  // Calculate the average and round to 1 decimal place
+  const sum = processScores.reduce((a, b) => a + b, 0);
+  const avg = sum / processScores.length;
+  return Math.round(avg * 10) / 10; // Round to 1 decimal place
 }
 
 export function calculateDomainScore(scores: Score[], domain: Domain, categoryScores?: CategoryScore[]): number {

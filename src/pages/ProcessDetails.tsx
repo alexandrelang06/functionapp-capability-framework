@@ -151,6 +151,45 @@ export function ProcessDetails() {
         [processId]: result
       }));
       
+      // Automatically update category score if in automatic mode
+      if (categoryId) {
+        try {
+          // Find the category in framework data
+          const category = frameworkData
+            .flatMap(d => d.categories)
+            .find(c => c.id === categoryId);
+            
+          if (category) {
+            // Get current category score entry
+            const categoryScoreEntry = getCategoryScore(categoryId);
+            
+            // Only update if category is in automatic mode (not manual)
+            if (!categoryScoreEntry?.is_manual) {
+              // Calculate new category score with updated process scores
+              const updatedScores = {
+                ...scores,
+                [processId]: result
+              };
+              
+              const processScores = Object.values(updatedScores).map(s => ({
+                processId: s.process_id,
+                score: s.score
+              }));
+              
+              const calculatedCategoryScore = calculateCategoryScore(processScores, category);
+              
+              // Persist the calculated score to database
+              if (calculatedCategoryScore > 0) {
+                await updateCategoryScore(assessmentId, categoryId, calculatedCategoryScore, false);
+              }
+            }
+          }
+        } catch (categoryError) {
+          console.error('Error updating category score:', categoryError);
+          // Don't throw - category score update failure shouldn't prevent process score update
+        }
+      }
+      
     } catch (err) {
       console.error('Error updating score:', err);
       const errorMessage = handleDatabaseError(err);
@@ -162,7 +201,7 @@ export function ProcessDetails() {
     } finally {
       setSavingScores(prev => ({ ...prev, [processId]: false }));
     }
-  }, [assessmentId, scores]);
+  }, [assessmentId, scores, categoryId, frameworkData, getCategoryScore, updateCategoryScore, handleDatabaseError]);
 
   const handleCategoryScoreChange = useCallback(async (newScore: number | null, isManual: boolean) => {
     if (!assessmentId || !categoryId) return;
@@ -171,7 +210,31 @@ export function ProcessDetails() {
       setSavingCategoryScore(true);
       setError(null);
 
-      await updateCategoryScore(assessmentId, categoryId, newScore, isManual);
+      // Determine the score to save and the manual flag
+      let newScoreToSave = newScore;
+      let isManualFlag = isManual;
+      
+      // If switching to automatic mode, calculate the score based on process scores
+      if (!isManual) {
+        const category = frameworkData
+          .flatMap(d => d.categories)
+          .find(c => c.id === categoryId);
+          
+        if (category) {
+          const processScores = Object.values(scores).map(s => ({
+            processId: s.process_id,
+            score: s.score
+          }));
+          
+          newScoreToSave = calculateCategoryScore(processScores, category);
+          
+          // If calculated score is 0 (no processes scored), store as null to satisfy DB constraint
+          if (newScoreToSave === 0) {
+            newScoreToSave = null;
+          }
+        }
+      }
+      await updateCategoryScore(assessmentId, categoryId, newScoreToSave, isManualFlag);
       
       setIsEditingCategoryScore(false);
       

@@ -123,9 +123,7 @@ interface AssessmentData {
   is_open: boolean;
   completion_percentage: number;
   scores: AssessmentScore[];
-  author?: {
-    email: string;
-  };
+  mission_lead?: string;
   challenges?: string[];
   strategy_context?: string;
   technology_context?: string;
@@ -160,7 +158,8 @@ export function AssessmentView() {
       annual_revenue: ''
     },
     assessment: {
-      job_code: ''
+      job_code: '',
+      mission_lead: ''
     }
   });
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -231,6 +230,7 @@ export function AssessmentView() {
         .from('assessments')
         .update({
           job_code: editedHeader.assessment.job_code,
+          mission_lead: editedHeader.assessment.mission_lead,
           title: updatedCompany.name
         })
         .eq('id', assessment.id)
@@ -248,7 +248,8 @@ export function AssessmentView() {
         ...prev!,
         ...updated,
         company: companyData,
-        job_code: editedHeader.assessment.job_code
+        job_code: editedHeader.assessment.job_code,
+        mission_lead: editedHeader.assessment.mission_lead
       }));
 
       setIsEditingHeader(false);
@@ -269,7 +270,8 @@ export function AssessmentView() {
             annual_revenue: assessment.company.annual_revenue
           },
           assessment: {
-            job_code: assessment.job_code || ''
+            job_code: assessment.job_code || '',
+            mission_lead: assessment.mission_lead || ''
           }
         });
       }
@@ -290,7 +292,7 @@ export function AssessmentView() {
         },
         assessment: {
           job_code: assessment.job_code || '',
-          title: assessment.company.name
+          mission_lead: assessment.mission_lead || ''
         }
       });
     }
@@ -327,8 +329,7 @@ export function AssessmentView() {
             score,
             notes,
             priority
-          ),
-          author:user_emails!created_by(email)
+          )
         `)
         .eq('id', id)
         .maybeSingle();
@@ -741,8 +742,21 @@ export function AssessmentView() {
             </div>
             <div className="flex items-center space-x-2">
               <User className="h-5 w-5 text-gray" />
-              <span className="text-gray">Created By:</span>
-              <span>{assessment.author?.email}</span>
+              <span className="text-gray">Mission Lead:</span>
+              {isEditingHeader ? (
+                <input
+                  type="text"
+                  value={editedHeader.assessment.mission_lead}
+                  onChange={(e) => setEditedHeader(prev => ({
+                    ...prev,
+                    assessment: { ...prev.assessment, mission_lead: e.target.value }
+                  }))}
+                  className="flex-1 px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                  placeholder="Mission Lead"
+                />
+              ) : (
+                <span>{assessment.mission_lead || 'Not specified'}</span>
+              )}
             </div>
           </div>
 
@@ -888,6 +902,7 @@ export function AssessmentView() {
             showHeatmap={true}
             assessmentId={assessment.id}
             isOpen={assessment.is_open}
+            categoryScores={categoryScores}
           />
         </div>
       </div>

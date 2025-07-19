@@ -6,7 +6,6 @@ interface User {
   id: string;
   email: string;
   created_at: string;
-  last_sign_in: string;
 }
 
 interface DatabaseStats {
@@ -32,13 +31,9 @@ export function AdminPanel() {
       setLoading(true);
       setError(null);
 
-      // Fetch users
-      const { data: usersData, error: usersError } = await supabase
-        .from('user_emails')
-        .select('*')
-        .order('email');
-
-      if (usersError) throw usersError;
+      // TODO: Implement secure backend endpoint for user management
+      // Admin operations require service_role key and must be done server-side
+      const usersData: User[] = [];
 
       // Fetch database statistics
       const { data: assessments } = await supabase
@@ -57,7 +52,7 @@ export function AdminPanel() {
         ? assessments.reduce((sum, a) => sum + (a.completion_percentage || 0), 0) / assessments.length 
         : 0;
 
-      setUsers(usersData || []);
+      setUsers(usersData);
       setStats({
         assessments: assessments?.length || 0,
         companies: companies?.length || 0,
@@ -78,6 +73,10 @@ export function AdminPanel() {
       return;
     }
 
+    // TODO: Implement secure backend endpoint for user deletion
+    alert('User deletion requires a secure backend implementation. This feature is currently disabled for security reasons.');
+    return;
+
     try {
       setDeleteLoading(userId);
 
@@ -97,9 +96,9 @@ export function AdminPanel() {
 
       if (companiesError) throw companiesError;
 
-      // Delete user
-      const { error: userError } = await supabase.auth.admin.deleteUser(userId);
-      if (userError) throw userError;
+      // TODO: Call secure backend endpoint to delete user
+      // const { error: userError } = await supabase.auth.admin.deleteUser(userId);
+      // if (userError) throw userError;
 
       setUsers(users.filter(u => u.id !== userId));
     } catch (err) {
@@ -196,22 +195,23 @@ export function AdminPanel() {
               <tr className="bg-gray-50">
                 <th className="px-6 py-3 text-left text-gray font-din">Email</th>
                 <th className="px-6 py-3 text-left text-gray font-din">Created</th>
-                <th className="px-6 py-3 text-left text-gray font-din">Last Sign In</th>
                 <th className="px-6 py-3 text-left text-gray font-din">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(user => (
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray">
+                    <p className="mb-2">User management requires secure backend implementation</p>
+                    <p className="text-sm">Admin operations are disabled for security reasons</p>
+                  </td>
+                </tr>
+              ) : (
+                users.map(user => (
                 <tr key={user.id} className="border-t border-gray-100">
                   <td className="px-6 py-4 font-din">{user.email}</td>
                   <td className="px-6 py-4 font-din">
                     {new Date(user.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 font-din">
-                    {user.last_sign_in 
-                      ? new Date(user.last_sign_in).toLocaleDateString()
-                      : 'Never'
-                    }
                   </td>
                   <td className="px-6 py-4">
                     <button
@@ -235,7 +235,8 @@ export function AdminPanel() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

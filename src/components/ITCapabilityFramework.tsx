@@ -104,13 +104,35 @@ export function ITCapabilityFramework({
       // First set default descriptions to ensure UI works even if fetch fails
       setProcessDescriptions(getDefaultDescriptions());
 
-      // Run comprehensive diagnostics
-      console.log('🔍 Running database diagnostics...');
-      const diagnostics = await testDatabaseStatus();
-      setDiagnosticInfo(diagnostics);
-      
-      if (!diagnostics.available) {
-        throw new Error(diagnostics.message);
+      // Try to fetch from database, but don't block UI if service is unavailable
+      try {
+        console.log('🔍 Running database diagnostics...');
+        const diagnostics = await testDatabaseStatus();
+        setDiagnosticInfo(diagnostics);
+        
+        if (!diagnostics.available) {
+          // If service is unavailable (503), continue with default descriptions
+          if (diagnostics.message.includes('Service temporarily unavailable') || 
+              diagnostics.message.includes('503')) {
+            console.warn('⚠️ Database service temporarily unavailable, using default descriptions');
+            setConnectionStatus('error');
+            setFetchError('Database service temporarily unavailable. Using default process descriptions.');
+            return; // Continue with default descriptions
+          }
+          throw new Error(diagnostics.message);
+        }
+      } catch (serviceError) {
+        // Handle 503 and other service errors gracefully
+        const errorMessage = handleDatabaseError(serviceError);
+        if (errorMessage.includes('Service temporarily unavailable') || 
+            errorMessage.includes('503') ||
+            errorMessage.includes('Could not query the database for the schema cache')) {
+          console.warn('⚠️ Database service temporarily unavailable, using default descriptions');
+          setConnectionStatus('error');
+          setFetchError('Database service temporarily unavailable. Using default process descriptions.');
+          return; // Continue with default descriptions
+        }
+        throw serviceError; // Re-throw other errors
       }
       
       const { data, error } = await supabase
@@ -121,6 +143,16 @@ export function ITCapabilityFramework({
       if (error) {
         console.error('Error fetching process descriptions:', error);
         const errorMessage = handleDatabaseError(error);
+        
+        // Handle 503 errors gracefully
+        if (errorMessage.includes('Service temporarily unavailable') || 
+            errorMessage.includes('503')) {
+          console.warn('⚠️ Database service temporarily unavailable, using default descriptions');
+          setFetchError('Database service temporarily unavailable. Using default process descriptions.');
+          setConnectionStatus('error');
+          return; // Continue with default descriptions
+        }
+        
         setFetchError(errorMessage);
         setConnectionStatus('error');
         return;
@@ -145,7 +177,16 @@ export function ITCapabilityFramework({
     } catch (err) {
       console.error('Error fetching process descriptions:', err);
       const errorMessage = handleDatabaseError(err);
-      setFetchError(errorMessage);
+      
+      // Handle 503 errors gracefully
+      if (errorMessage.includes('Service temporarily unavailable') || 
+          errorMessage.includes('503') ||
+          errorMessage.includes('Could not query the database for the schema cache')) {
+        console.warn('⚠️ Database service temporarily unavailable, using default descriptions');
+        setFetchError('Database service temporarily unavailable. Using default process descriptions.');
+      } else {
+        setFetchError(errorMessage);
+      }
       setConnectionStatus('error');
     } finally {
       setIsRetrying(false);
@@ -236,7 +277,23 @@ export function ITCapabilityFramework({
   };
 
   const handleResetToAutomatic = async (categoryId: string) => {
-    await handleCategoryScoreChange(categoryId, null, false);
+    // Calculate the automatic score first
+    const targetCategory = frameworkData
+      .flatMap(d => d.categories)
+      .find(c => c.id === categoryId);
+      
+    if (targetCategory) {
+      const processScores = scores.map(s => ({
+        processId: s.process_id,
+        score: s.score
+      }));
+      
+      const calculatedScore = calculateCategoryScore(processScores, targetCategory);
+      
+      // Save the calculated score (or null if no processes scored)
+      const scoreToSave = calculatedScore > 0 ? calculatedScore : null;
+      await handleCategoryScoreChange(categoryId, scoreToSave, false);
+    }
   };
 
   const getCategoryScoreEntry = (categoryId: string) => {
@@ -244,9 +301,9 @@ export function ITCapabilityFramework({
   };
 
   const calculateFinalCategoryScore = (categoryId: string): number => {
-    // Check if we have a manual score for this category
+    // Check if we have a score stored in database for this category
     const manualScoreEntry = getCategoryScore(categoryId);
-    if (manualScoreEntry && manualScoreEntry.is_manual && manualScoreEntry.manual_score !== null) {
+    if (manualScoreEntry && manualScoreEntry.manual_score !== null) {
       return manualScoreEntry.manual_score;
     }
     

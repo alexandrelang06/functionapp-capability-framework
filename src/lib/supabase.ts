@@ -49,7 +49,7 @@ const clientOptions = {
       while (attempt < maxRetries) {
         try {
           console.log(`Attempting request to: ${url} (attempt ${attempt + 1}/${maxRetries})`);
-          
+          console.log('headers sent:', supabase._headers)
           // Add timeout to prevent hanging requests
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
@@ -141,10 +141,6 @@ const clientOptions = {
 
 // Initialize the Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, clientOptions);
-
-export const initSupabase = async () => {
-  await supabase.auth.setSession(null)
-}
 
 // Helper function to check database connection with comprehensive error handling
 export const checkDatabaseConnection = async (): Promise<boolean> => {

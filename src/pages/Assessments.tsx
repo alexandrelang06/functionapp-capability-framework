@@ -20,9 +20,7 @@ interface Assessment {
   is_open: boolean;
   completion_percentage: number;
   avg_score: number;
-  author?: {
-    email: string;
-  };
+  mission_lead?: string;
 }
 
 export function Assessments() {
@@ -68,6 +66,7 @@ export function Assessments() {
           completion_percentage,
           created_at,
           created_by,
+          mission_lead,
           company:companies!company_id (
             name,
             industry,
@@ -75,7 +74,6 @@ export function Assessments() {
             company_size,
             annual_revenue
           ),
-          author:user_emails!created_by(email),
           scores(process_id, score)
         `)
         .order('created_at', { ascending: false });
@@ -235,7 +233,7 @@ export function Assessments() {
     .filter(assessment => {
       const matchesSearch = 
         assessment.company?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        assessment.author?.email.toLowerCase().includes(searchTerm.toLowerCase());
+        (assessment.mission_lead && assessment.mission_lead.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesCompletion = 
         completionFilter === 'all' || 
@@ -264,7 +262,7 @@ export function Assessments() {
         case 'company':
           return multiplier * (a.company?.name || '').localeCompare(b.company?.name || '');
         case 'createdBy':
-          return multiplier * (a.author?.email || '').localeCompare(b.author?.email || '');
+          return multiplier * (a.mission_lead || '').localeCompare(b.mission_lead || '');
         case 'lastModified':
           return multiplier * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         case 'completion':
@@ -414,7 +412,7 @@ export function Assessments() {
                   className="px-4 py-3 text-left text-gray font-din cursor-pointer hover:text-blue-dark"
                   onClick={() => handleSort('createdBy')}
                 >
-                  Created By {sortField === 'createdBy' && (
+                  Mission Lead {sortField === 'createdBy' && (
                     sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 inline ml-1" /> : <ChevronDown className="h-4 w-4 inline ml-1" />
                   )}
                 </th>
@@ -516,7 +514,7 @@ export function Assessments() {
                       <div className="w-5 h-5 flex-shrink-0">
                         <User className="h-5 w-5 text-gray" />
                       </div>
-                      <span className="font-din">{assessment.author?.email}</span>
+                      <span className="font-din">{assessment.mission_lead || 'Not specified'}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 font-din">

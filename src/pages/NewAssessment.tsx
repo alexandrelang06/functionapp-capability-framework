@@ -30,7 +30,8 @@ const FIELD_DESCRIPTIONS = {
   technologyContext: 'Description de la stratégie et du contexte technologique',
   challenges: 'Principaux défis et objectifs de transformation',
   assessmentScope: 'Périmètre précis de l\'évaluation',
-  bearingpointAdvisor: 'Nom du consultant BearingPoint en charge de la mission'
+  bearingpointAdvisor: 'Nom du consultant BearingPoint en charge de la mission',
+  missionLead: 'Name of person to contact for information about the mission over time'
 };
 interface FormData {
   // Company Information
@@ -57,6 +58,7 @@ interface FormData {
   challenges: string[];
   assessmentScope: string;
   bearingpointAdvisor: string;
+  missionLead: string;
 }
 
 const COMPANY_SIZES = [
@@ -164,7 +166,8 @@ export function NewAssessment() {
     technologyContext: '',
     challenges: [],
     assessmentScope: '',
-    bearingpointAdvisor: ''
+    bearingpointAdvisor: '',
+    missionLead: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -198,7 +201,7 @@ export function NewAssessment() {
       case 2:
         return Boolean(formData.cioOrganization);
       case 3:
-        return true;
+        return Boolean(formData.missionLead);
       default:
         return false;
     }
@@ -255,6 +258,7 @@ export function NewAssessment() {
           challenges: formData.challenges.length > 0 ? formData.challenges : null,
           assessment_scope: formData.assessmentScope,
           bearingpoint_advisor: formData.bearingpointAdvisor,
+          mission_lead: formData.missionLead,
           created_by: user.id
         })
         .select()
@@ -602,6 +606,16 @@ export function NewAssessment() {
               onChange={handleInputChange}
               icon={<User className="h-5 w-5 text-gray" />}
               placeholder="Enter advisor name"
+            />
+
+            <FormField
+              label="Mission Lead"
+              name="missionLead"
+              value={formData.missionLead}
+              onChange={handleInputChange}
+              icon={<User className="h-5 w-5 text-gray" />}
+              placeholder="Enter mission lead name"
+              required
             />
           </div>
         );

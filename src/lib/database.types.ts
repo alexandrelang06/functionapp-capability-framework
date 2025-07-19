@@ -209,6 +209,7 @@ export interface Database {
           methodology: string | null
           stakeholders: string | null
           constraints: string | null
+          mission_lead: string | null
         }
         Insert: {
           id?: string
@@ -226,6 +227,7 @@ export interface Database {
           methodology?: string | null
           stakeholders?: string | null
           constraints?: string | null
+          mission_lead?: string | null
         }
         Update: {
           id?: string
@@ -243,6 +245,7 @@ export interface Database {
           methodology?: string | null
           stakeholders?: string | null
           constraints?: string | null
+          mission_lead?: string | null
         }
         Relationships: [
           {
@@ -339,20 +342,8 @@ export interface Database {
             referencedRelation: "assessments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "categories_id_fkey"
-            columns: ["category_id"]
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domains_id_fkey"
-            columns: ["domain_id"]
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          }
         ]
-      }
+          }
     }
     Functions: {
       [_ in never]: never
