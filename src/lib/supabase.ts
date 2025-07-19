@@ -26,7 +26,7 @@ const clientOptions = {
   auth: {
     persistSession: true, // ❗ important : évite le header Authorization
     autoRefreshToken: false,
-    detectSessionInUrl: false,
+    detectSessionInUrl: false
 /*	storage: {
 		getItem: () => null,
 		setItem: () => {},
