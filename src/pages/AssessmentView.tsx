@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Building2, Calendar, User, Globe, Landmark, DollarSign, Lock, Lock as LockOpen, Download, Printer, ZoomIn, ZoomOut, Maximize2, Edit, Save, X, FileText, AlertCircle } from 'lucide-react';
+import { Building2, Calendar, User, Globe, Landmark, DollarSign, Lock, Lock as LockOpen, Download, Printer, ZoomIn, ZoomOut, Maximize2, Edit, Save, X, FileText, AlertCircle, Database } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import {
   Chart as ChartJS,
@@ -111,14 +112,19 @@ interface AssessmentData {
     country: string;
     company_size: string;
     annual_revenue: string;
-    it_department_size: number;
-    annual_it_cost: number;
-    it_budget_percentage: number;
+    it_department_size: string;
+    exact_it_employees: number | null;
+    annual_it_cost: string;
+    effective_it_cost: number | null;
+    cio_organization: string;
+    it_budget_percentage: number | null;
+    detailed_benchmark_available: boolean;
   };
   title: string;
   job_code: string;
   created_by: string;
   created_at: string;
+  updated_at: string;
   status: 'complete' | 'partial';
   is_open: boolean;
   completion_percentage: number;
@@ -140,6 +146,7 @@ export function AssessmentView() {
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
   const [globalMaturityScore, setGlobalMaturityScore] = useState<number>(0);
   const [domainScores, setDomainScores] = useState<DomainScore[]>([]);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -149,6 +156,147 @@ export function AssessmentView() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savingScores, setSavingScores] = useState<Record<string, boolean>>({});
   const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [showDetailsSection, setShowDetailsSection] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [editableData, setEditableData] = useState({
+    effectiveRevenue: '',
+    exactEmployees: '',
+    exactItEmployees: '',
+    effectiveItCost: '',
+    cioOrganization: '',
+    itDepartmentSize: '',
+    annualItCost: '',
+    detailedBenchmarkAvailable: 'no',
+    strategyContext: '',
+    technologyContext: '',
+    assessmentScope: '',
+    challenges: [] as string[],
+    bearingpointAdvisor: ''
+  });
+
+  // Calculate completion percentage
+  const calculateCompletionPercentage = useCallback(async (assessmentScores: AssessmentScore[]) => {
+    try {
+      // Get total number of processes
+      const { data: processes, error: processError } = await supabase
+        .from('processes')
+        .select('id');
+      
+      if (processError) throw processError;
+      
+      const totalProcesses = processes?.length || 0;
+      if (totalProcesses === 0) return 0;
+      
+      // Count processes with scores > 0
+      const scoredProcesses = assessmentScores.filter(score => score.score > 0).length;
+      
+      // Calculate percentage
+      const percentage = Math.round((scoredProcesses / totalProcesses) * 100);
+      
+      return percentage;
+    } catch (err) {
+      console.error('Error calculating completion percentage:', err);
+      return 0;
+    }
+  }, []);
+
+  // Update completion percentage in database
+  const updateCompletionPercentage = useCallback(async (assessmentId: string, percentage: number) => {
+    try {
+      const newStatus = percentage === 100 ? 'complete' : 'partial';
+      
+      const { error } = await supabase
+        .from('assessments')
+        .update({ 
+          completion_percentage: percentage,
+          status: newStatus
+        })
+        .eq('id', assessmentId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setAssessment(prev => prev ? {
+        ...prev,
+        completion_percentage: percentage,
+        status: newStatus
+      } : null);
+      
+    } catch (err) {
+      console.error('Error updating completion percentage:', err);
+    }
+  }, []);
+
+  const handleSaveDetails = async () => {
+    if (!assessment) return;
+    
+    try {
+      setSavingDetails(true);
+      setDetailsError(null);
+
+      // Update company data
+      const { error: companyError } = await supabase
+        .from('companies')
+        .update({
+          effective_revenue: editableData.effectiveRevenue ? parseFloat(editableData.effectiveRevenue) : null,
+          exact_employees: editableData.exactEmployees ? parseInt(editableData.exactEmployees) : null,
+          exact_it_employees: editableData.exactItEmployees ? parseInt(editableData.exactItEmployees) : null,
+          effective_it_cost: editableData.effectiveItCost ? parseFloat(editableData.effectiveItCost) : null,
+          cio_organization: editableData.cioOrganization,
+          it_department_size: editableData.itDepartmentSize,
+          annual_it_cost: editableData.annualItCost,
+          detailed_benchmark_available: editableData.detailedBenchmarkAvailable === 'yes'
+        })
+        .eq('id', assessment.company.id);
+
+      if (companyError) throw companyError;
+
+      // Update assessment data
+      const { error: assessmentError } = await supabase
+        .from('assessments')
+        .update({
+          strategy_context: editableData.strategyContext,
+          technology_context: editableData.technologyContext,
+          assessment_scope: editableData.assessmentScope,
+          challenges: editableData.challenges.length > 0 ? editableData.challenges : null,
+          bearingpoint_advisor: editableData.bearingpointAdvisor
+        })
+        .eq('id', assessment.id);
+
+      if (assessmentError) throw assessmentError;
+
+      // Update local state
+      setAssessment(prev => prev ? {
+        ...prev,
+        strategy_context: editableData.strategyContext,
+        technology_context: editableData.technologyContext,
+        assessment_scope: editableData.assessmentScope,
+        challenges: editableData.challenges.length > 0 ? editableData.challenges : null,
+        bearingpoint_advisor: editableData.bearingpointAdvisor,
+        company: {
+          ...prev.company,
+          effective_revenue: editableData.effectiveRevenue ? parseFloat(editableData.effectiveRevenue) : null,
+          exact_employees: editableData.exactEmployees ? parseInt(editableData.exactEmployees) : null,
+          exact_it_employees: editableData.exactItEmployees ? parseInt(editableData.exactItEmployees) : null,
+          effective_it_cost: editableData.effectiveItCost ? parseFloat(editableData.effectiveItCost) : null,
+          cio_organization: editableData.cioOrganization,
+          it_department_size: editableData.itDepartmentSize,
+          annual_it_cost: editableData.annualItCost,
+          detailed_benchmark_available: editableData.detailedBenchmarkAvailable === 'yes'
+        }
+      } : null);
+
+      setIsEditingDetails(false);
+    } catch (err) {
+      console.error('Error saving details:', err);
+      setDetailsError('Failed to save changes. Please try again.');
+    } finally {
+      setSavingDetails(false);
+    }
+  };
+
   const [editedHeader, setEditedHeader] = useState({
     company: {
       name: '',
@@ -164,6 +312,25 @@ export function AssessmentView() {
   });
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [editedDetails, setEditedDetails] = useState({
+    company: {
+      it_department_size: '',
+      exact_it_employees: null as number | null,
+      annual_it_cost: '',
+      effective_it_cost: null as number | null,
+      cio_organization: '',
+      it_budget_percentage: null as number | null,
+      detailed_benchmark_available: false
+    },
+    assessment: {
+      strategy_context: '',
+      technology_context: '',
+      assessment_scope: '',
+      challenges: [] as string[],
+      bearingpoint_advisor: ''
+    },
+    missionLead: ''
+  });
 
   const handleToggleStatus = async () => {
     if (!assessment) return;
@@ -301,7 +468,7 @@ export function AssessmentView() {
     setSaveError(null);
   };
 
-  const fetchAssessment = async () => {
+  const fetchAssessment = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -322,7 +489,11 @@ export function AssessmentView() {
             annual_revenue,
             it_department_size,
             annual_it_cost,
-            it_budget_percentage
+            it_budget_percentage,
+            detailed_benchmark_available,
+            exact_it_employees,
+            effective_it_cost,
+            cio_organization
           ),
           scores(
             process_id,
@@ -350,28 +521,17 @@ export function AssessmentView() {
       // Update the global category scores context
       setCategoryScores(categoryScoresData || []);
       
-      // Get total number of processes
-      const { data: processes } = await supabase
-        .from('processes')
-        .select('id');
+      // Calculate and update completion percentage
+      if (assessmentData.scores && id) {
+        const calculatedPercentage = await calculateCompletionPercentage(assessmentData.scores);
+        setCompletionPercentage(calculatedPercentage);
+        
+        // Update database if percentage is different
+        if (calculatedPercentage !== assessmentData.completion_percentage) {
+          await updateCompletionPercentage(id, calculatedPercentage);
+        }
+      }
       
-      const totalProcesses = processes?.length || 0;
-      
-      // Calculate completion percentage based on scored processes
-      const scoredProcesses = assessmentData.scores.filter(s => s.score > 0).length;
-      const completionPercentage = Math.round((scoredProcesses / totalProcesses) * 100);
-
-      // Update assessment completion percentage in database
-      const { error: updateError } = await supabase
-        .from('assessments')
-        .update({ 
-          completion_percentage: completionPercentage,
-          status: completionPercentage === 100 ? 'complete' : 'partial'
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
       // Update local state with the new completion percentage and category scores
       setAssessment({
         ...assessmentData,
@@ -387,7 +547,7 @@ export function AssessmentView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, calculateCompletionPercentage, updateCompletionPercentage, setCategoryScores, navigate, completionPercentage]);
 
   // Update scores whenever assessment data changes
   useEffect(() => {
@@ -411,7 +571,7 @@ export function AssessmentView() {
 
   useEffect(() => {
     fetchAssessment();
-  }, [id]);
+  }, [fetchAssessment]);
 
   const handleZoom = (direction: 'in' | 'out') => {
     setScale(prev => {
@@ -631,7 +791,11 @@ export function AssessmentView() {
                 )}
               </button>
             )}
-            <button className="text-gray hover:text-blue transition-colors">
+            <button 
+              onClick={() => window.print()}
+              className="text-gray hover:text-blue transition-colors"
+              title="Imprimer l'évaluation"
+            >
               <Printer className="h-6 w-6" />
             </button>
           </div>
@@ -758,6 +922,20 @@ export function AssessmentView() {
                 <span>{assessment.mission_lead || 'Not specified'}</span>
               )}
             </div>
+
+            <div className="flex items-center space-x-2">
+              <Database className="h-5 w-5 text-gray" />
+              <span className="font-din">Detailed Benchmark:</span>
+              {assessment.company?.detailed_benchmark_available !== null ? (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  assessment.company?.detailed_benchmark_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {assessment.company?.detailed_benchmark_available ? 'Available' : 'Not Available'}
+                </span>
+              ) : (
+                <span className="text-gray-500 text-xs">N/A</span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -790,26 +968,377 @@ export function AssessmentView() {
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden relative">
                   <div
                     className="absolute inset-y-0 left-0 bg-[#2fd0fd] transition-all duration-300"
-                    style={{ width: `${assessment.completion_percentage}%` }}
+                    style={{ width: `${completionPercentage}%` }}
                   />
                 </div>
               </div>
-              <span>{assessment.completion_percentage}%</span>
+              <span>{completionPercentage}%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Expandable Details Section */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div 
+          className="p-6 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => setShowDetailsSection(!showDetailsSection)}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="font-bree text-xl text-blue-dark">Additional Details</h2>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray">
+                {showDetailsSection ? 'Hide details' : 'Show details'}
+              </span>
+              {showDetailsSection ? (
+                <ChevronUp className="h-5 w-5 text-gray" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {showDetailsSection && (
+          <div className="p-6 space-y-6">
+            {/* IT Department Details */}
+            <div className="border-b border-gray-100 pb-6">
+              <h3 className="font-bree text-lg text-blue-dark mb-4">IT Department Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">IT Department Size</label>
+                  {isEditingDetails ? (
+                    <select
+                      value={editedDetails.company.it_department_size || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, it_department_size: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                    >
+                      <option value="">Select IT department size</option>
+                      <option value="Less than 50">Less than 50</option>
+                      <option value="50-100">50-100</option>
+                      <option value="100-200">100-200</option>
+                      <option value="200-500">200-500</option>
+                      <option value="500-1000">500-1000</option>
+                      <option value=">1000">&gt;1000</option>
+                      <option value="I don't know">I don't know</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-600">{assessment.company.it_department_size || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Exact IT Employees</label>
+                  {isEditingDetails ? (
+                    <input
+                      type="number"
+                      min="1"
+                      value={editedDetails.company.exact_it_employees || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, exact_it_employees: parseInt(e.target.value) || null }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                      placeholder="Enter exact number of IT employees"
+                    />
+                  ) : (
+                    <p className="text-gray-600">{assessment.company.exact_it_employees || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Annual IT Cost</label>
+                  {isEditingDetails ? (
+                    <select
+                      value={editedDetails.company.annual_it_cost || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, annual_it_cost: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                    >
+                      <option value="">Select annual IT cost</option>
+                      <option value="<10M">&lt;10M</option>
+                      <option value="10-20">10-20</option>
+                      <option value="20-50">20-50</option>
+                      <option value="50-100">50-100</option>
+                      <option value="100-200">100-200</option>
+                      <option value=">200M">&gt;200M</option>
+                      <option value="I don't know">I don't know</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-600">{assessment.company.annual_it_cost || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Effective IT Cost (€)</label>
+                  {isEditingDetails ? (
+                    <input
+                      type="number"
+                      min="1"
+                      value={editedDetails.company.effective_it_cost || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, effective_it_cost: parseFloat(e.target.value) || null }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                      placeholder="Enter effective IT cost"
+                    />
+                  ) : (
+                    <p className="text-gray-600">
+                      {assessment.company.effective_it_cost 
+                        ? `€${assessment.company.effective_it_cost.toLocaleString()}` 
+                        : 'Not specified'
+                      }
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">CIO Organization</label>
+                  {isEditingDetails ? (
+                    <select
+                      value={editedDetails.company.cio_organization || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, cio_organization: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                    >
+                      <option value="">Select CIO organization</option>
+                      <option value="Centralized (80%+ of the IT department in a single entity)">
+                        Centralized (80%+ of the IT department in a single entity)
+                      </option>
+                      <option value="Decentralized (IT department spread across multiple countries)">
+                        Decentralized (IT department spread across multiple countries)
+                      </option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-600">{assessment.company.cio_organization || 'Not specified'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Assessment Context */}
+            <div className="border-b border-gray-100 pb-6">
+              <h3 className="font-bree text-lg text-blue-dark mb-4">Assessment Context</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Strategy Context</label>
+                  {isEditingDetails ? (
+                    <textarea
+                      value={editedDetails.assessment.strategy_context || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        assessment: { ...prev.assessment, strategy_context: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                      rows={3}
+                      placeholder="Describe the strategy context..."
+                    />
+                  ) : (
+                    <p className="text-gray-600 whitespace-pre-wrap">
+                      {assessment?.strategy_context || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Technology Context</label>
+                  {isEditingDetails ? (
+                    <textarea
+                      value={editedDetails.assessment.technology_context || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        assessment: { ...prev.assessment, technology_context: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                      rows={3}
+                      placeholder="Describe the technology context..."
+                    />
+                  ) : (
+                    <p className="text-gray-600 whitespace-pre-wrap">
+                      {assessment?.technology_context || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Assessment Scope</label>
+                  {isEditingDetails ? (
+                    <textarea
+                      value={editedDetails.assessment.assessment_scope || ''}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        assessment: { ...prev.assessment, assessment_scope: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                      rows={3}
+                      placeholder="Define the assessment scope..."
+                    />
+                  ) : (
+                    <p className="text-gray-600 whitespace-pre-wrap">
+                      {assessment?.assessment_scope || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Challenges</label>
+                  {isEditingDetails ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {['Cost reduction', 'Operational efficiency', 'Security and compliance', 'Technological modernization', 'Strategic alignment', 'Optimization of IT resource management'].map(challenge => (
+                        <label key={challenge} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={editedDetails.assessment.challenges?.includes(challenge) || false}
+                            onChange={(e) => {
+                              const currentChallenges = editedDetails.assessment.challenges || [];
+                              const newChallenges = e.target.checked
+                                ? [...currentChallenges, challenge]
+                                : currentChallenges.filter(c => c !== challenge);
+                              setEditedDetails(prev => ({
+                                ...prev,
+                                assessment: { ...prev.assessment, challenges: newChallenges }
+                              }));
+                            }}
+                            className="w-4 h-4 text-blue border-gray-300 rounded focus:ring-blue"
+                          />
+                          <span className="text-sm text-gray-700">{challenge}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {assessment?.challenges && assessment.challenges.length > 0 ? (
+                        assessment.challenges.map((challenge, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue/10 text-blue rounded-full text-sm"
+                          >
+                            {challenge}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-gray-600">No challenges specified</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-gray-900 hidden">{assessment.company.exact_it_employees || 'Not specified'}</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4">
+              {isEditingDetails ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditingDetails(false);
+                      // Reset edited details to current assessment data
+                      setEditedDetails({
+                        company: {
+                          it_department_size: assessment.company.it_department_size,
+                          exact_it_employees: assessment.company.exact_it_employees,
+                          annual_it_cost: assessment.company.annual_it_cost,
+                          effective_it_cost: assessment.company.effective_it_cost,
+                          cio_organization: assessment.company.cio_organization,
+                          it_budget_percentage: assessment.company.it_budget_percentage,
+                          detailed_benchmark_available: assessment.company.detailed_benchmark_available
+                        },
+                        assessment: {
+                          strategy_context: assessment.strategy_context,
+                          technology_context: assessment.technology_context,
+                          assessment_scope: assessment.assessment_scope,
+                          challenges: assessment.challenges,
+                          bearingpoint_advisor: assessment.bearingpoint_advisor
+                        },
+                        missionLead: assessment.mission_lead || ''
+                      });
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveDetails}
+                    disabled={savingDetails}
+                    className={`
+                      flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors
+                      ${savingDetails
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#2fd0fd] text-white hover:bg-[#2fd0fd]/90'
+                      }
+                    `}
+                  >
+                    {savingDetails ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsEditingDetails(true);
+                    // Initialize edited details with current data
+                    setEditedDetails({
+                      company: {
+                        it_department_size: assessment.company.it_department_size,
+                        exact_it_employees: assessment.company.exact_it_employees,
+                        annual_it_cost: assessment.company.annual_it_cost,
+                        effective_it_cost: assessment.company.effective_it_cost,
+                        cio_organization: assessment.company.cio_organization,
+                        it_budget_percentage: assessment.company.it_budget_percentage,
+                        detailed_benchmark_available: assessment.company.detailed_benchmark_available
+                      },
+                      assessment: {
+                        strategy_context: assessment.strategy_context,
+                        technology_context: assessment.technology_context,
+                        assessment_scope: assessment.assessment_scope,
+                        challenges: assessment.challenges,
+                        bearingpoint_advisor: assessment.bearingpoint_advisor
+                      },
+                      missionLead: assessment.mission_lead || ''
+                    });
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 text-blue hover:text-blue-dark transition-colors"
+                >
+                  <Edit className="h-5 w-5" />
+                  <span>Edit Details</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Assessment Details - Left Column */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="font-bree text-2xl text-blue-dark mb-4">Global Maturity Score</h2>
+          <h2 className="font-bree text-2xl text-blue-dark mb-6">Global Maturity Score</h2>
           <div className="flex items-center justify-center">
             <div className="relative w-48 h-48">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="font-bree text-4xl text-blue-dark">{globalMaturityScore.toFixed(1)}</div>
+                  <div className="text-4xl font-bold text-blue-dark">
+                    {formatScore(globalMaturityScore)}
+                  </div>
                   <div className="text-gray mt-2">Scale: 0-5</div>
-                  <div className="text-sm text-blue mt- 1">
+                  <div className="text-sm text-blue mt-1">
                     {globalMaturityScore >= 4 ? 'Excellent' :
                      globalMaturityScore >= 3 ? 'Good' :
                      globalMaturityScore >= 2 ? 'Fair' : 'Needs Improvement'}
@@ -839,6 +1368,7 @@ export function AssessmentView() {
           </div>
         </div>
 
+        {/* Domain Maturity - Right Column */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="font-bree text-2xl text-blue-dark mb-4">Domain Maturity Overview</h2>
           <div className="h-[400px] flex items-center justify-center">
@@ -943,14 +1473,11 @@ export function AssessmentView() {
               >
                 {updatingStatus ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     <span>Updating...</span>
                   </>
                 ) : (
-                  <>
-                    {assessment.is_open ? <Lock className="h-5 w-5" /> : <LockOpen className="h-5 w-5" />}
-                    <span>{assessment.is_open ? 'Close Assessment' : 'Reopen Assessment'}</span>
-                  </>
+                  <span>{assessment.is_open ? 'Close Assessment' : 'Reopen Assessment'}</span>
                 )}
               </button>
             </div>

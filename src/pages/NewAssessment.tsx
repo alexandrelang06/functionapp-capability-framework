@@ -4,33 +4,33 @@ import { Building2, Users, Banknote, Database, Calculator, Globe, Briefcase, Sca
 import { supabase } from '../lib/supabase';
 
 const CHALLENGES = [
-  'Réduction des coûts',
-  'Efficacité opérationnelle',
-  'Sécurité et conformité',
-  'Modernisation technologique',
-  'Alignement stratégique',
-  'Optimisation de la gestion des ressources IT'
+  'Cost reduction',
+  'Operational efficiency',
+  'Security and compliance',
+  'Technological modernization',
+  'Strategic alignment',
+  'Optimization of IT resource management'
 ];
 
 const FIELD_DESCRIPTIONS = {
-  companyName: 'Nom légal complet de l\'entreprise',
-  country: 'Pays de l\'entité principale auditée ou, en cas de décentralisation totale, pays du siège social',
-  industry: 'Secteur d\'activité principal de l\'entreprise',
-  companySize: 'Nombre total d\'employés dans l\'entreprise',
-  exact_employees: 'Nombre exact d\'employés dans l\'entreprise (optionnel)',
-  annualRevenue: 'Chiffre d\'affaires annuel de l\'entreprise',
-  effective_revenue: 'Chiffre d\'affaires exact de l\'entreprise en euros (optionnel)',
-  itDepartmentSize: 'Nombre total d\'employés IT (internes et externes)',
-  exactItEmployees: 'Nombre exact d\'employés IT, incluant internes et externes (optionnel)',
-  annualItCost: 'Coût IT annuel total incluant les coûts directs et indirects',
-  effectiveItCost: 'Coût IT annuel exact en euros, incluant coûts directs et indirects (optionnel)',
-  cioOrganization: 'Structure organisationnelle de la DSI',
-  jobCode: 'Code de référence interne pour la mission',
-  strategyContext: 'Description du contexte stratégique et business de l\'entreprise',
-  technologyContext: 'Description de la stratégie et du contexte technologique',
-  challenges: 'Principaux défis et objectifs de transformation',
-  assessmentScope: 'Périmètre précis de l\'évaluation',
-  bearingpointAdvisor: 'Nom du consultant BearingPoint en charge de la mission',
+  companyName: 'Full legal name of the company',
+  country: 'Country of the main audited entity or, in case of full decentralization, country of the headquarters',
+  industry: 'Main industry sector of the company',
+  companySize: 'Total number of employees in the company',
+  exact_employees: 'Exact number of employees in the company (optional)',
+  annualRevenue: 'Annual revenue of the company',
+  effective_revenue: 'Exact annual revenue of the company in euros (optional)',
+  itDepartmentSize: 'Total number of IT employees (internal and external)',
+  exactItEmployees: 'Exact number of IT employees, including internal and external (optional)',
+  annualItCost: 'Total annual IT cost, including direct and indirect costs',
+  effectiveItCost: 'Exact annual IT cost in euros, including direct and indirect costs (optional)',
+  cioOrganization: 'Organizational structure of the IT department',
+  jobCode: 'Internal reference code for the mission',
+  strategyContext: "Description of the company's strategic and business context",
+  technologyContext: 'Description of the technology strategy and context',
+  challenges: 'Main transformation challenges and objectives',
+  assessmentScope: 'Precise scope of the assessment',
+  bearingpointAdvisor: 'Name of the BearingPoint consultant in charge of the mission',
   missionLead: 'Name of person to contact for information about the mission over time'
 };
 interface FormData {
@@ -59,6 +59,7 @@ interface FormData {
   assessmentScope: string;
   bearingpointAdvisor: string;
   missionLead: string;
+  detailedBenchmarkAvailable: string;
 }
 
 const COMPANY_SIZES = [
@@ -113,13 +114,13 @@ const INDUSTRIES = [
 ];
 
 const IT_DEPARTMENT_SIZES = [
-  'Moins de 50',
+  'Less than 50',
   '50-100',
   '100-200',
   '200-500',
   '500-1000',
   '>1000',
-  'Je ne sais pas'
+  'I don\'t know'
 ];
 
 const IT_COST_RANGES = [
@@ -129,12 +130,12 @@ const IT_COST_RANGES = [
   '50-100',
   '100-200',
   '>200M',
-  'Je ne sais pas'
+  'I don\'t know'
 ];
 
 const CIO_ORGANIZATIONS = [
-  'Centralisée (+80% de la DSI dans une même entité)',
-  'Décentralisée (DSI répartie entre plusieurs pays)'
+  'Centralized (80%+ of the IT department in a single entity)',
+  'Decentralized (IT department spread across multiple countries)'
 ];
 
 export function NewAssessment() {
@@ -167,7 +168,8 @@ export function NewAssessment() {
     challenges: [],
     assessmentScope: '',
     bearingpointAdvisor: '',
-    missionLead: ''
+    missionLead: '',
+    detailedBenchmarkAvailable: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -201,7 +203,10 @@ export function NewAssessment() {
       case 2:
         return Boolean(formData.cioOrganization);
       case 3:
-        return Boolean(formData.missionLead);
+        return Boolean(
+          formData.missionLead && 
+          formData.detailedBenchmarkAvailable
+        );
       default:
         return false;
     }
@@ -231,11 +236,14 @@ export function NewAssessment() {
           country: formData.country,
           company_size: formData.companySize,
           annual_revenue: formData.annualRevenue,
-          it_department_size: formData.itDepartmentSize || null,
-          annual_it_cost: formData.annualItCost,
           exact_it_employees: parseInt(formData.exactItEmployees) || null,
           effective_it_cost: parseFloat(formData.effectiveItCost) || null,
+          exact_employees: parseInt(formData.exact_employees) || null,
+          effective_revenue: parseFloat(formData.effective_revenue) || null,
           cio_organization: formData.cioOrganization,
+          it_department_size: formData.itDepartmentSize,
+          annual_it_cost: formData.annualItCost,
+          detailed_benchmark_available: formData.detailedBenchmarkAvailable === 'yes',
           created_by: user.id
         })
         .select()
@@ -597,6 +605,28 @@ export function NewAssessment() {
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none font-din"
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-gray font-din">
+                <FileText className="h-5 w-5" />
+                <div className="flex items-center space-x-1">
+                  <span>Detailed benchmark available</span>
+                  <span className="text-red-500">*</span>
+                </div>
+              </label>
+              <p className="text-sm text-gray-light mb-2">Detailed cost and/or FTE data available for benchmark (contact mission owner)</p>
+              <select
+                name="detailedBenchmarkAvailable"
+                value={formData.detailedBenchmarkAvailable}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none font-din"
+                required
+              >
+                <option value="">Select availability</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
             </div>
 
             <FormField

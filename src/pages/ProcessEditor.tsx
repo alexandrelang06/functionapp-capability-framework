@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, AlertCircle, CheckCircle, Loader2, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -24,6 +24,43 @@ export function ProcessEditor() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Auto-save with debouncing
+  const debouncedSave = useCallback(async (updatedProcess: Process) => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(async () => {
+      try {
+        setSaving(true);
+        setError(null);
+        
+        const { error } = await supabase
+          .from('processes')
+          .update({
+            short_description: updatedProcess.short_description,
+            description: updatedProcess.description,
+            key_questions: updatedProcess.key_questions,
+            key_artifacts: updatedProcess.key_artifacts,
+            maturity_levels: updatedProcess.maturity_levels
+          })
+          .eq('id', updatedProcess.id);
+        
+        if (error) throw error;
+        
+        setSuccess('Modifications enregistrées automatiquement');
+        setTimeout(() => setSuccess(null), 2000);
+      } catch (err) {
+        console.error('Error auto-saving process:', err);
+        setError('Erreur lors de l\'enregistrement automatique');
+      } finally {
+        setSaving(false);
+      }
+    }, 1000); // 1 second delay
+    
+    setAutoSaveTimeout(timeout);
+  }, [autoSaveTimeout]);
 
   // Fetch process data
   useEffect(() => {
@@ -123,92 +160,106 @@ export function ProcessEditor() {
 
   const handleShortDescriptionChange = (value: string) => {
     if (!process) return;
-    setProcess({ ...process, short_description: value });
-    triggerAutoSave();
+    const updatedProcess = { ...process, short_description: value };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleDescriptionChange = (index: number, value: string) => {
     if (!process) return;
     const newDescription = [...process.description];
     newDescription[index] = value;
-    setProcess({ ...process, description: newDescription });
-    triggerAutoSave();
+    const updatedProcess = { ...process, description: newDescription };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleAddDescription = () => {
     if (!process) return;
-    setProcess({ 
+    const updatedProcess = { 
       ...process, 
       description: [...process.description, ''] 
-    });
+    };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleRemoveDescription = (index: number) => {
     if (!process) return;
     const newDescription = [...process.description];
     newDescription.splice(index, 1);
-    setProcess({ ...process, description: newDescription });
-    triggerAutoSave();
+    const updatedProcess = { ...process, description: newDescription };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleKeyQuestionChange = (index: number, value: string) => {
     if (!process) return;
     const newKeyQuestions = [...process.key_questions];
     newKeyQuestions[index] = value;
-    setProcess({ ...process, key_questions: newKeyQuestions });
-    triggerAutoSave();
+    const updatedProcess = { ...process, key_questions: newKeyQuestions };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleAddKeyQuestion = () => {
     if (!process) return;
-    setProcess({ 
+    const updatedProcess = { 
       ...process, 
       key_questions: [...process.key_questions, ''] 
-    });
+    };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleRemoveKeyQuestion = (index: number) => {
     if (!process) return;
     const newKeyQuestions = [...process.key_questions];
     newKeyQuestions.splice(index, 1);
-    setProcess({ ...process, key_questions: newKeyQuestions });
-    triggerAutoSave();
+    const updatedProcess = { ...process, key_questions: newKeyQuestions };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleKeyArtifactChange = (index: number, value: string) => {
     if (!process) return;
     const newKeyArtifacts = [...process.key_artifacts];
     newKeyArtifacts[index] = value;
-    setProcess({ ...process, key_artifacts: newKeyArtifacts });
-    triggerAutoSave();
+    const updatedProcess = { ...process, key_artifacts: newKeyArtifacts };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleAddKeyArtifact = () => {
     if (!process) return;
-    setProcess({ 
+    const updatedProcess = { 
       ...process, 
       key_artifacts: [...process.key_artifacts, ''] 
-    });
+    };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleRemoveKeyArtifact = (index: number) => {
     if (!process) return;
     const newKeyArtifacts = [...process.key_artifacts];
     newKeyArtifacts.splice(index, 1);
-    setProcess({ ...process, key_artifacts: newKeyArtifacts });
-    triggerAutoSave();
+    const updatedProcess = { ...process, key_artifacts: newKeyArtifacts };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   const handleMaturityLevelChange = (level: string, value: string) => {
     if (!process) return;
-    setProcess({
+    const updatedProcess = {
       ...process,
       maturity_levels: {
         ...process.maturity_levels,
         [level]: value
       }
-    });
-    triggerAutoSave();
+    };
+    setProcess(updatedProcess);
+    debouncedSave(updatedProcess);
   };
 
   if (loading) {
@@ -266,7 +317,7 @@ export function ProcessEditor() {
           {saving && (
             <div className="flex items-center text-blue">
               <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              <span>Enregistrement...</span>
+              <span>Enregistrement automatique...</span>
             </div>
           )}
           {success && (
@@ -275,14 +326,7 @@ export function ProcessEditor() {
               <span>{success}</span>
             </div>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue text-white rounded-lg hover:bg-blue-dark transition-colors disabled:opacity-50"
-          >
-            <Save className="h-5 w-5" />
-            <span>Enregistrer</span>
-          </button>
+          <div className="text-sm text-gray-500">Enregistrement automatique activé</div>
         </div>
       </div>
 

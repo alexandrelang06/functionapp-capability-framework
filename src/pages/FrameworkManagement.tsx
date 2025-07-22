@@ -26,11 +26,24 @@ export function FrameworkManagement() {
     id: string;
     value: string;
   } | null>(null);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleSave = () => {
     setLastSaved(new Date());
   };
 
+  // Auto-save functionality
+  const triggerAutoSave = () => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      handleSave();
+    }, 1000); // Auto-save after 1 second of inactivity
+    
+    setAutoSaveTimeout(timeout);
+  };
   const handleAddDomain = () => {
     const newDomain = {
       id: `domain-${Date.now()}`,
@@ -39,6 +52,7 @@ export function FrameworkManagement() {
       categories: []
     };
     setFrameworkData([...frameworkData, newDomain]);
+    triggerAutoSave();
   };
 
   const handleAddCategory = (domainId: string) => {
@@ -56,6 +70,7 @@ export function FrameworkManagement() {
       }
       return domain;
     }));
+    triggerAutoSave();
   };
 
   const handleAddProcess = (domainId: string, categoryId: string) => {
@@ -81,6 +96,7 @@ export function FrameworkManagement() {
       }
       return domain;
     }));
+    triggerAutoSave();
   };
 
   const handleDelete = (type: 'domain' | 'category' | 'process', ids: { domainId: string; categoryId?: string; processId?: string }) => {
@@ -117,6 +133,7 @@ export function FrameworkManagement() {
         return domain;
       }));
     }
+    triggerAutoSave();
   };
 
   const handleExport = () => {
@@ -150,13 +167,14 @@ export function FrameworkManagement() {
             <span>Import</span>
             <input type="file" className="hidden" accept=".json" onChange={() => {}} />
           </label>
-          <button
-            onClick={handleSave}
-            className="flex items-center space-x-2 px-6 py-2 bg-blue text-white rounded-lg hover:bg-blue-dark transition-colors"
-          >
-            <Save className="h-5 w-5" />
-            <span>Save Changes</span>
-          </button>
+          <div className="flex items-center space-x-2 text-gray">
+            <History className="h-5 w-5" />
+            <span>
+              {lastSaved 
+                ? `Auto-saved: ${lastSaved.toLocaleTimeString()}`
+                : 'Auto-save enabled'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -171,14 +189,6 @@ export function FrameworkManagement() {
                 <Plus className="h-5 w-5" />
                 <span>Add Domain</span>
               </button>
-            </div>
-            <div className="flex items-center space-x-2 text-gray">
-              <History className="h-5 w-5" />
-              <span>
-                {lastSaved 
-                  ? `Last saved: ${lastSaved.toLocaleTimeString()}`
-                  : 'Not saved yet'}
-              </span>
             </div>
           </div>
         </div>
@@ -298,13 +308,6 @@ export function FrameworkManagement() {
                                               <Edit className="h-4 w-4" />
                                             </button>
                                             <button
-                                              onClick={() => {}}
-                                              className="p-1 text-gray hover:text-blue transition-colors"
-                                              title="Edit Process"
-                                            >
-                                              <Edit2 className="h-4 w-4" />
-                                            </button>
-                                            <button
                                               onClick={() => handleDelete('process', {
                                                 domainId: domain.id,
                                                 categoryId: category.id,
@@ -354,19 +357,6 @@ export function FrameworkManagement() {
         </div>
       </div>
 
-      {/* Warning Modal for Destructive Actions */}
-      <div className="fixed bottom-4 right-4">
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-lg">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-yellow-400" />
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                Changes will be applied immediately after saving
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

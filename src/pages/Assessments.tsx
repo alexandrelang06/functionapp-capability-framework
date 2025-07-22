@@ -83,25 +83,40 @@ export function Assessments() {
       const { data: processes } = await supabase.from('processes').select('id');
       const totalProcesses = processes?.length || 0;
 
-      // Update completion percentage for each assessment
-      const updatedAssessments = assessmentsData?.map(assessment => {
-        const scoredProcesses = assessment.scores.filter(s => s.score > 0).length;
-        const completionPercentage = Math.round((scoredProcesses / totalProcesses) * 100);
+      // Update completion percentage for each assessment with proper async handling
+      const updatedAssessments = await Promise.all(
+        assessmentsData?.map(async (assessment) => {
+          try {
+            const scoredProcesses = assessment.scores.filter(s => s.score > 0).length;
+            const completionPercentage = Math.round((scoredProcesses / totalProcesses) * 100);
+            const newStatus = completionPercentage === 100 ? 'complete' : 'partial';
 
-        // Update assessment in database
-        supabase
-          .from('assessments')
-          .update({ 
-            completion_percentage: completionPercentage,
-            status: completionPercentage === 100 ? 'complete' : 'partial'
-          })
-          .eq('id', assessment.id);
+            // Update assessment in database and wait for completion
+            const { error: updateError } = await supabase
+              .from('assessments')
+              .update({ 
+                completion_percentage: completionPercentage,
+                status: newStatus
+              })
+              .eq('id', assessment.id);
 
-        return {
-          ...assessment,
-          completion_percentage: completionPercentage
-        };
-      });
+            if (updateError) {
+              console.error(`Error updating assessment ${assessment.id}:`, updateError);
+              // Continue with calculated values even if DB update fails
+            }
+
+            return {
+              ...assessment,
+              completion_percentage: completionPercentage,
+              status: newStatus
+            };
+          } catch (err) {
+            console.error(`Error processing assessment ${assessment.id}:`, err);
+            // Return original assessment if calculation fails
+            return assessment;
+          }
+        }) || []
+      );
 
       setAssessments(updatedAssessments || []);
     } catch (err) {

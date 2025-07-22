@@ -452,7 +452,7 @@ export function ITCapabilityFramework({
       )}
 
       {/* Connection Success Indicator */}
-      {connectionStatus === 'connected' && diagnosticInfo && (
+      {false && connectionStatus === 'connected' && !error && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
           <div className="flex items-center space-x-2">
             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
