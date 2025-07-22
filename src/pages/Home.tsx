@@ -49,20 +49,6 @@ export function Home() {
               link
             </a>
           </p>
-          
-          <div className="bg-white/50 backdrop-blur-sm rounded-lg p-6 space-y-3">
-            <div className="flex items-start space-x-3">
-              <span className="text-blue-dark font-bold">•</span>
-              <span>Use the "New Assessment" tab to start a new evaluation and create a company profile.</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <span className="text-blue-dark font-bold">•</span>
-              <span>Use the "Assessments" tab to browse and search through past assessments.</span>
-            </div>
-            <div className="mt-4">
-              <span>Please ensure accurate and consistent input – data quality is essential for meaningful insights.</span>
-            </div>
-          </div>
         </div>
       </header>
 

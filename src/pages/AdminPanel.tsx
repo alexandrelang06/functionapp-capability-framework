@@ -56,7 +56,7 @@ interface ProcessScore {
 interface DatabaseStats {
   assessments: number;
   companies: number;
-  scores: number;
+  benchmarkAssessmentsCount: number;
   avgCompletionRate: number;
 }
 
@@ -219,9 +219,16 @@ export function AdminPanel() {
         .from('companies')
         .select('id');
 
-      const { data: scores } = await supabase
-        .from('scores')
-        .select('id');
+      // Count assessments with benchmark data available
+      const { data: detailedBenchmarkAssessments } = await supabase
+        .from('assessments')
+        .select(`
+          id,
+          company:companies!inner (
+            detailed_benchmark_available
+          )
+        `)
+        .eq('companies.detailed_benchmark_available', true);
 
       const avgCompletion = assessments?.length 
         ? assessments.reduce((sum, a) => sum + (a.completion_percentage || 0), 0) / assessments.length 
@@ -230,7 +237,7 @@ export function AdminPanel() {
       setStats({
         assessments: assessments?.length || 0,
         companies: companies?.length || 0,
-        scores: scores?.length || 0,
+        benchmarkAssessmentsCount: detailedBenchmarkAssessments?.length || 0,
         avgCompletionRate: Math.round(avgCompletion)
       });
 
@@ -529,10 +536,10 @@ export function AdminPanel() {
             color="green"
           />
           <StatCard
-            icon={<Settings className="h-6 w-6" />}
-            title="Scores"
-            value={stats.scores}
-            color="purple"
+            icon={<BarChart3 className="h-6 w-6" />}
+            title="Benchmark disponibles"
+            value={stats.benchmarkAssessmentsCount}
+            color="blue"
           />
           <StatCard
             icon={<AlertTriangle className="h-6 w-6" />}

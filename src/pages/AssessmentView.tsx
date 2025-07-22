@@ -981,7 +981,7 @@ export function AssessmentView() {
       {/* Expandable Details Section */}
       <div className="bg-white rounded-lg shadow-sm">
         <div 
-          className="p-6 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="p-6 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors hidden"
           onClick={() => setShowDetailsSection(!showDetailsSection)}
         >
           <div className="flex items-center justify-between">
@@ -1000,7 +1000,7 @@ export function AssessmentView() {
         </div>
 
         {showDetailsSection && (
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 hidden">
             {/* IT Department Details */}
             <div className="border-b border-gray-100 pb-6">
               <h3 className="font-bree text-lg text-blue-dark mb-4">IT Department Information</h3>
@@ -1231,6 +1231,47 @@ export function AssessmentView() {
                   )}
                 </div>
                 <p className="mt-1 text-gray-900 hidden">{assessment.company.exact_it_employees || 'Not specified'}</p>
+
+                <div className="space-y-2 hidden">
+                  <label className="block text-sm font-medium text-gray-700">BearingPoint Advisor</label>
+                  <span className="text-gray-600">{assessment.bearingpoint_advisor || 'Not specified'}</span>
+                </div>
+
+                <div className="space-y-2 hidden">
+                  <label className="block text-sm font-medium text-gray-700">Mission Lead</label>
+                  {isEditingDetails ? (
+                    <input
+                      type="text"
+                      value={editedDetails.missionLead}
+                      onChange={(e) => setEditedDetails(prev => ({ ...prev, missionLead: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter mission lead name"
+                    />
+                  ) : (
+                    <p className="text-gray-600">{assessment?.mission_lead || 'Not specified'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Detailed Benchmark Available</label>
+                  {isEditingDetails ? (
+                    <select
+                      value={editedDetails.company.detailed_benchmark_available ? 'yes' : 'no'}
+                      onChange={(e) => setEditedDetails(prev => ({
+                        ...prev,
+                        company: { ...prev.company, detailed_benchmark_available: e.target.value === 'yes' }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue focus:border-blue outline-none"
+                    >
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  ) : (
+                    <p className="text-gray-600">
+                      {assessment.company?.detailed_benchmark_available ? 'Yes' : 'No'}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1364,6 +1405,12 @@ export function AssessmentView() {
                   strokeDasharray={`${(globalMaturityScore / 5) * 552} 552`}
                 />
               </svg>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="flex items-center space-x-2 hidden">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <span className="text-red-600 font-medium">Not Available</span>
             </div>
           </div>
         </div>

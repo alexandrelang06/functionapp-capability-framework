@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, Target, BarChart3, ClipboardList, Settings, Lock, Download } from 'lucide-react';
+import { HelpCircle, Target, BarChart3, ClipboardList, Settings, Lock, Download, Users, Building2, Calculator } from 'lucide-react';
 
 export function FAQ() {
   return (
@@ -13,91 +13,172 @@ export function FAQ() {
             Frequently Asked Questions
           </h1>
           <p className="text-gray text-lg max-w-2xl mx-auto">
-            Learn how to use the IT Process Maturity Assessment Framework effectively
+            Learn how to use the IT Capability Framework effectively for your organization's IT maturity assessment
           </p>
         </header>
 
         <div className="grid gap-8">
           <Section
             icon={<Target className="h-6 w-6" />}
-            title="What is the IT Process Maturity Assessment?"
+            title="What is the IT Capability Framework?"
             content={`
-              The IT Process Maturity Assessment is a comprehensive framework designed to evaluate and improve your organization's IT processes. It helps you:
+              The IT Capability Framework is a comprehensive assessment tool designed to evaluate and improve your organization's IT processes across multiple domains. It helps you:
               
-              • Assess the current maturity level of your IT processes
-              • Identify areas for improvement
-              • Track progress over time
+              • Assess the current maturity level of your IT capabilities
+              • Identify areas for improvement and optimization
+              • Track progress over time with detailed benchmarking
               • Align IT processes with industry best practices
+              • Compare your organization against industry benchmarks
             `}
           />
 
           <Section
             icon={<BarChart3 className="h-6 w-6" />}
-            title="How does the scoring system work?"
+            title="How does the maturity scoring system work?"
             content={`
-              The framework uses a 5-level maturity scale:
+              The framework uses a 5-level maturity scale for each process:
 
               1. Initial/Ad-hoc: Processes are unorganized and undefined
-              2. Repeatable: Basic processes are established
+              2. Repeatable: Basic processes are established and follow patterns
               3. Defined: Processes are documented and standardized
-              4. Managed: Processes are measured and controlled
-              5. Optimized: Focus on continuous improvement
+              4. Managed: Processes are measured, controlled and monitored
+              5. Optimized: Focus on continuous improvement and innovation
 
-              Each process is scored on this scale. Category and domain scores are calculated as averages with one decimal place.
+              Scores are calculated automatically:
+              • Process scores: Individual ratings from 1-5 or N/A
+              • Category scores: Average of process scores (can be manually overridden)
+              • Domain scores: Average of category scores
+              • Global score: Overall average across all domains
             `}
           />
 
           <Section
             icon={<ClipboardList className="h-6 w-6" />}
-            title="How to conduct an assessment?"
+            title="How to conduct a comprehensive assessment?"
             content={`
+              Follow these steps for a complete assessment:
+
               1. Create a new assessment from the "New Assessment" button
-              2. Fill in the organization and IT department information
-              3. Define the assessment scope and objectives
-              4. Score each process in the framework
-              5. Add notes and evidence for each score
-              6. Review the results in the heatmap view
-              7. Export or share the assessment report
+              2. Fill in comprehensive organization information:
+                 - Company details (name, industry, country, size, revenue)
+                 - IT department information (size, budget, structure)
+                 - Strategic and technology context
+              3. Define assessment scope, objectives and constraints
+              4. Score each process across all framework domains
+              5. Add detailed notes and evidence for each score
+              6. Mark priority processes for focused improvement
+              7. Review results in the interactive heatmap view
+              8. Export comprehensive reports for stakeholders
+            `}
+          />
+
+          <Section
+            icon={<Building2 className="h-6 w-6" />}
+            title="What framework domains are covered?"
+            content={`
+              The framework covers 6 main domains organized in 3 levels:
+
+              Strategic Level (Plan & Govern):
+              • Plan Strategy: IT strategy alignment and portfolio management
+              • Govern Technology: Risk, compliance, cybersecurity and data governance
+              • Manage Architecture: Enterprise architecture and technology strategy
+
+              Operational Level (Deliver & Operate):
+              • Manage Demand: Business relationships and demand management
+              • Deliver Solutions: Project delivery and solution engineering
+              • Operate Solutions: Operations and cybersecurity operations
+              • Support Users: Service management and user support
+
+              Foundation Level (Steer Resources):
+              • Steer Resources: Finance, HR, asset management and sourcing
+
+              Each domain contains multiple categories with specific processes to assess.
+            `}
+          />
+
+          <Section
+            icon={<Calculator className="h-6 w-6" />}
+            title="How are category and domain scores calculated?"
+            content={`
+              Scoring follows a hierarchical calculation:
+
+              • Process Scores: Individual ratings (1-5 or N/A)
+              • Category Scores: Automatic average of process scores within the category
+              • Manual Override: Category scores can be manually set if needed
+              • Domain Scores: Average of all category scores within the domain
+              • Global Score: Overall average across all domains
+
+              Key features:
+              • N/A scores are excluded from calculations
+              • Scores are rounded to one decimal place
+              • Manual category scores override automatic calculations
+              • Priority processes can be flagged for special attention
+            `}
+          />
+
+          <Section
+            icon={<Users className="h-6 w-6" />}
+            title="Who can access and manage assessments?"
+            content={`
+              The platform supports different user roles:
+
+              • Regular Users: Can create and manage their own assessments
+              • Administrators: Can view and manage all assessments
+              • Super Administrators: Full system access including user management
+
+              Assessment Management:
+              • Assessments can be marked as "Open" (editable) or "Closed" (read-only)
+              • Multiple assessments can be tracked over time
+              • Detailed benchmark data is available for qualified assessments
+              • Mission leads and BearingPoint advisors can be assigned
             `}
           />
 
           <Section
             icon={<Settings className="h-6 w-6" />}
-            title="What are the different framework components?"
+            title="Can the framework be customized?"
             content={`
-              The framework is organized hierarchically:
+              Yes, administrators can customize the framework:
 
-              • Domains: High-level areas of IT management
-              • Categories: Groups of related processes within a domain
-              • Processes: Specific IT activities to be assessed
-              
-              Each component is color-coded for easy navigation and visualization.
+              • Process Definitions: Edit descriptions, key questions, and deliverables
+              • Maturity Levels: Customize maturity level descriptions for each process
+              • Framework Structure: Add or modify domains, categories, and processes
+              • Assessment Templates: Create standardized assessment templates
+
+              All changes are automatically saved and applied across the platform.
             `}
           />
 
           <Section
             icon={<Lock className="h-6 w-6" />}
-            title="How are assessments managed?"
+            title="How is data security and privacy handled?"
             content={`
-              Assessments can be:
+              Data security is a top priority:
 
-              • Open: Allowing updates and modifications
-              • Closed: Locked for historical reference
-              
-              You can track multiple assessments over time to monitor improvement.
+              • All data is stored securely in Supabase with encryption
+              • Row-level security (RLS) ensures users only access their data
+              • Authentication is required for all operations
+              • Regular backups and data integrity checks
+              • GDPR-compliant data handling practices
+              • Audit trails for all assessment modifications
             `}
           />
 
           <Section
             icon={<Download className="h-6 w-6" />}
-            title="Can I export assessment data?"
+            title="What export and reporting options are available?"
             content={`
-              Yes, you can export:
+              Comprehensive reporting capabilities:
 
-              • Complete assessment reports
-              • Maturity heatmaps as images
-              • Detailed process scores and notes
-              • Comparative analysis between assessments
+              • Complete assessment reports with all scores and notes
+              • Interactive maturity heatmaps as high-resolution images
+              • Detailed process scores and evidence documentation
+              • Comparative analysis between multiple assessments
+              • Benchmark reports comparing against industry standards
+              • Executive summaries for stakeholder presentations
+              • Raw data exports for further analysis
+
+              All reports maintain professional formatting suitable for client delivery.
             `}
           />
         </div>
